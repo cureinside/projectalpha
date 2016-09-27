@@ -1,0 +1,196 @@
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(28, 26, 33, 35, 37, 39);
+int pwmki = 9;
+int pwmka = 3;
+int dirki2 = 8;
+int dirka1 = 2;
+int dirki1 = 10;
+int dirka2 = 4;
+int merah = 22;
+int kuning1 = 23;
+int kuning2 = 24;
+int hijau = 25;
+int mode = 27;
+int PWMKiriInt, PWMKananInt;
+
+
+void setup() 
+{
+  lcd.begin(16,2);
+  pinMode(pwmki,OUTPUT);
+  pinMode(pwmka,OUTPUT);
+  pinMode(dirki1,OUTPUT);
+  pinMode(dirki2,OUTPUT);
+  pinMode(dirka1,OUTPUT);
+  pinMode(dirka2,OUTPUT);
+
+  pinMode(merah,INPUT);
+  pinMode(hijau,INPUT);
+  pinMode(kuning2,INPUT);
+  pinMode(kuning1,INPUT);
+  pinMode(mode,INPUT);
+
+  digitalWrite(merah,HIGH);
+  digitalWrite(hijau,HIGH);
+  digitalWrite(kuning1,HIGH);
+  digitalWrite(kuning2,HIGH);
+  digitalWrite(mode,HIGH);
+  Serial.begin(9600);
+  
+}
+void mundur()
+      {
+       digitalWrite(dirki1,LOW);
+       digitalWrite(dirki2,HIGH);
+       analogWrite(pwmki,PWMKiriInt);
+
+       digitalWrite(dirka1,LOW);
+       digitalWrite(dirka2,HIGH);
+       analogWrite(pwmka,PWMKananInt);
+      }
+void maju(int L, int R)
+      {
+       digitalWrite(dirki1,HIGH);
+       digitalWrite(dirki2,LOW);
+       analogWrite(pwmki,L);
+
+       digitalWrite(dirka1,HIGH);
+       digitalWrite(dirka2,LOW);
+       analogWrite(pwmka,R);
+      }
+      
+void belki()
+      {
+       digitalWrite(dirki1,LOW);
+       digitalWrite(dirki2,HIGH);
+       analogWrite(pwmki,PWMKiriInt);
+
+       digitalWrite(dirka1,HIGH);
+       digitalWrite(dirka2,LOW);
+       analogWrite(pwmka,PWMKananInt);
+      }
+
+void belka()
+      {
+       digitalWrite(dirki1,HIGH);
+       digitalWrite(dirki2,LOW);
+       analogWrite(pwmki,PWMKiriInt);
+
+       digitalWrite(dirka1,LOW);
+       digitalWrite(dirka2,HIGH);
+       analogWrite(pwmka,PWMKananInt);
+      }
+
+void mundur1(int kiri, int kanan)
+      {
+       digitalWrite(dirki1,LOW);
+       digitalWrite(dirki2,HIGH);
+       analogWrite(pwmki,kiri);
+
+       digitalWrite(dirka1,LOW);
+       digitalWrite(dirka2,HIGH);
+       analogWrite(pwmka,kanan);
+      }
+void maju1(int kiri, int kanan)
+      {
+       digitalWrite(dirki1,HIGH);
+       digitalWrite(dirki2,LOW);
+       analogWrite(pwmki,kiri);
+
+       digitalWrite(dirka1,HIGH);
+       digitalWrite(dirka2,LOW);
+       analogWrite(pwmka,kanan);
+      }
+int a=0;
+void tampil(char x, int z, int y)
+{ 
+  lcd.setCursor(7,0);
+  lcd.print(x);   if (y>200 || z>200) {lcd.print("tol"); a++;}
+  lcd.clear();
+  lcd.setCursor(0,1);
+  lcd.print(z);
+  lcd.setCursor(13,1);
+  lcd.print(y); 
+          
+}
+
+void loop() {
+
+ 
+       if ( Serial.available())
+       {          char PWMKananChar[10]={NULL},PWMKiriChar[10]={NULL};
+
+        delay(100);
+      
+         while (Serial.available() > 0) 
+         {
+
+          int tes = Serial.available();
+          char buffer[tes];
+          Serial.readBytes(buffer,tes);
+          int a[tes];
+          int Batas;
+            for (int i =0;i<tes;i++)
+            {
+              a[i] = buffer[i];  
+            }
+      
+            for (int i=0;i<tes;i++)
+            {
+              if (a[i]==';')
+              {
+                Batas = i;
+                i = tes; 
+              }
+              else
+              {
+                PWMKiriChar[i] = a[i];  
+              } 
+            }
+      
+            for (int i=Batas+1;i<tes;i++)
+            {
+              PWMKananChar[i-(Batas+1)] = a[i];
+            }
+
+        int PWMKiriInt =  atoi(&PWMKananChar[0]);
+        int PWMKananInt = 0.73 * atoi(&PWMKiriChar[0]);
+     // int PWMKananInt = atoi(&PWMKiriChar[0]);
+       
+        
+        if ( PWMKananInt >=-150 && PWMKananInt <=150 &&PWMKananInt !=0 && PWMKiriInt !=0 && PWMKiriInt >=-150 && PWMKiriInt <=150)
+        {
+    
+         
+          if ((PWMKiriInt < 0) && (PWMKananInt < 0))
+          {
+            PWMKiriInt= 255 -(PWMKiriInt*-1);
+            PWMKananInt = 255 -(PWMKananInt*-1);
+            mundur();
+            tampil('A',PWMKiriInt,PWMKananInt);
+          } else
+          if ((PWMKiriInt < 0) && (PWMKananInt >= 0))
+          {
+            PWMKiriInt = 255 - (PWMKiriInt*-1);
+            belki();
+            tampil('B',PWMKiriInt,PWMKananInt);
+          } else
+          if ((PWMKiriInt >= 0) && (PWMKananInt < 0))
+          {
+            PWMKananInt = 255 - (PWMKananInt*-1);
+            belka();
+            tampil('C',PWMKiriInt,PWMKananInt);
+          } else
+          if ((PWMKiriInt >= 0) && (PWMKananInt >= 0))
+          {
+            maju(PWMKiriInt,PWMKananInt);
+            tampil('D',PWMKiriInt,PWMKananInt);
+           //tampil('D',40, 60);
+          }
+        
+        }     
+      }
+       }
+    
+    }
