@@ -1,3 +1,0 @@
-mount.cifs //192.168.0.200/share-robiyanto /home/pi/projects/neptune/network/ -o user=Robiyanto
-
-umount -f -a -t cifs -l
