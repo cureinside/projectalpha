@@ -1,0 +1,800 @@
+#include <stdio.h>
+#include <iostream>
+#include <conio.h>
+#include "tserial.h"
+#include "bot_control.h"
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <math.h>
+#include <cmath>
+#include <Windows.h>
+#include <ctime>
+
+using namespace std;
+int a = 100, b = 150, c=200;
+int r = 48, s = 88, t = 128;
+
+long int pwmkiri,pwmkanan; 
+float u1,u2,u3,u4,u5,u6,u7,u8;
+int k;
+
+
+float batas[3]={100, 150, 200};
+float sudut[3]={20, 88, 160};
+		double sum1f=0,sum2f=0,degf;
+
+int ruleskiri[3][3][3]={
+                    {
+                     {20,20,20},
+                     {20,40,40},
+                     {20,40,50}
+                    },
+                    {
+                     {65,35,50},
+                     {65,35,50},
+                     {65,40,60}
+                    }, 
+                    {
+                     {20,25,35},
+                     {20,45,65},
+                     {20,65,65}
+                    }
+                  };
+              
+int ruleskanan[3][3][3]={
+                    {
+                     {65,60,55},
+                     {65,65,55},
+                     {65,60,50}
+                    },
+                    {
+                     {20,35,60},
+                     {20,35,50},
+                     {20,40,40}
+                    },
+                    {
+                     {65,50,35},
+                     {65,25,40},
+                     {65,20,20}
+                    }
+                  };
+char conversionBuffer[5];
+serial comm;
+
+using namespace std;
+
+ifstream file;
+double degree[400], range[400], quality[400];
+string output1, output2, output3,code,lastcode;
+int jumlahdata;
+float kanan1, serong_kananA1, serong_kananB1, depan1;
+float sum1 =0, sum2 =0, sum3 =0, sum4 =0;
+int c1 =0,c2=0,c3=0,c4=0;
+int serong, depan, corner;
+
+double sin_(double par)
+	{double temp = sin ((par * 3.14)/180); return temp;}
+
+double cos_(double par)
+	{double temp = cos ((par * 3.14)/180); return temp;}
+
+double asin_(double par)
+	{double temp;
+		temp = asin(par);
+		temp = ((temp*180)/3.14); return temp;}
+
+double acos_(double par)
+	{double temp;
+		temp = acos(par);
+		temp = ((temp*180)/3.14); return temp;}
+			
+
+bool cekode()
+{
+	file.clear();
+	file.seekg(0,ios::beg);
+	file>>code;
+
+	if (code==lastcode)
+	{
+		return false;
+	}
+	else
+	{
+		lastcode = code;
+		return true;
+	}
+}
+
+
+void cek_posisi(float gx,float gy,float gz)
+ {
+	 int x,y,z;
+	 cout <<"1     "<< gx << "    " << gy << "    " << gz <<endl;
+	    
+	 	x= static_cast<int>(gx);
+		y= static_cast<int>(gy);
+		z= static_cast<int>(gz);
+		cout <<"2      "<< x << "    " << y << "    " << z <<endl;
+ 
+	    if (x < a) {serong=0;} else
+          if (x < b) {serong=1;} else
+            if (x == b) {serong=2;} else
+              if (x < c) {serong=3;} else
+                {serong=4;} 
+              if (y < a) {depan=0;} else
+                if (y < b) {depan=1;} else
+                  if (y == b) {depan=2;} else
+                    if (y < c) {depan=3;} else
+                      {depan=4;}   
+                     if (z < r) {corner=0;} else
+                       if (z < s) {corner=1;} else
+                        if (z == s) {corner=2;} else
+                          if (z < t) {corner=3;} else
+                            {corner=4;}
+                      cout <<"4     "<< serong << "    " << depan << "    " << corner << endl;
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 0) || (corner == 2) || (corner == 4)))//1-1-1
+
+                      {pwmkiri = ruleskiri[serong / 2][depan / 2][corner / 2]; 
+
+                       pwmkanan = ruleskanan[serong / 2][depan / 2][corner / 2];
+					  } else
+                      
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 1) || (corner == 3)))//1-1-0
+                      {
+                        u1 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u2 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]); 
+                        
+                        pwmkiri = u1*ruleskiri[serong / 2][depan / 2][((corner+1)/2) - 1] + u2*ruleskiri[serong / 2][depan / 2][(corner+1)/2];
+                        
+                        pwmkanan = u1*ruleskanan[serong / 2][depan / 2][((corner+1)/2) - 1] + u2*ruleskanan[serong / 2][depan / 2][(corner+1)/2]; 
+                      } else
+
+                      if  (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 1) || (depan == 3)) && ((corner == 0) || (corner == 2) || (corner == 4)))//1-0-1
+                      {                   
+                        u1 = (gy - batas[((depan+1)/2)-1]) / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u2 = (batas[(depan+1)/2] - gy)     / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        
+                        pwmkiri = u1*ruleskiri[serong / 2][((depan+1)/2) - 1][corner / 2] + u2*ruleskiri[serong / 2][(depan+1)/2][corner / 2];
+                        
+                        pwmkanan = u1*ruleskanan[serong / 2][((depan+1)/2) - 1][corner / 2] + u2*ruleskanan[serong / 2][(depan+1)/2][corner / 2];
+                      } else
+
+					  if (((serong == 1) || (serong == 3)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 0) || (corner == 2) || (corner == 4)))//0-1-1
+                      {
+                       u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                       u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]); 
+                        
+                        pwmkiri = u1*ruleskiri[((serong+1)/2) - 1][depan / 2][corner / 2] + u2*ruleskiri[(serong+1)/2][depan / 2][corner / 2];
+                        
+                        pwmkanan = u1*ruleskanan[((serong+1)/2) - 1][depan / 2][corner / 2] + u2*ruleskanan[(serong+1)/2][depan / 2][corner / 2];   
+                      } else
+
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 1) || (depan == 3)) && ((corner == 1) || (corner == 3)))//1-0-0
+                      {
+                        u1 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u2 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u3 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u4 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[serong / 2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+								   (u1*u4*ruleskiri[serong / 2][((depan+1)/2) - 1][(corner+1)/2]) + 
+                                   (u2*u4*ruleskiri[serong / 2][(depan+1)/2][(corner+1)/2]) + 
+                                   (u2*u3*ruleskiri[serong / 2][(depan+1)/2][((corner+1)/2) - 1]));
+                                   
+                        pwmkanan = ((u1*u3*ruleskanan[serong / 2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+							        (u1*u4*ruleskanan[serong / 2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u2*u4*ruleskanan[serong / 2][(depan+1)/2][(corner+1)/2]) +   
+                                    (u2*u3*ruleskanan[serong / 2][(depan+1)/2][((corner+1)/2) - 1]));
+                      } else 
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 1) || (corner == 3)))//0-1-0
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u4 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[((serong+1)/2) - 1][depan / 2][((corner+1)/2) - 1]) + 
+                                   (u1*u4*ruleskiri[((serong+1)/2) - 1][depan / 2][(corner+1)/2]) +
+                                   (u2*u3*ruleskiri[(serong+1)/2][depan / 2][((corner+1)/2) - 1]) +
+                                   (u2*u4*ruleskiri[(serong+1)/2][depan / 2][(corner+1)/2]));
+                                 
+                        pwmkanan = ((u1*u3*ruleskanan[((serong+1)/2) - 1][depan / 2][((corner+1)/2) - 1]) + 
+                                    (u1*u4*ruleskanan[((serong+1)/2) - 1][depan / 2][(corner+1)/2]) +
+                                    (u2*u3*ruleskanan[(serong+1)/2][depan / 2][((corner+1)/2) - 1]) +
+                                    (u2*u4*ruleskanan[(serong+1)/2][depan / 2][(corner+1)/2]));
+                      } else
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 1) || (depan == 3)) && ((corner == 0) || (corner == 2) || (corner == 4)))//0-0-1
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u4 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]); 
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][corner / 2]) +
+                                   (u1*u4*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][corner / 2]) +
+                                   (u2*u3*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][corner / 2]) +
+                                   (u2*u4*ruleskiri[(serong+1)/2][(depan+1)/2][corner / 2]));
+                                   
+                        pwmkanan = ((u1*u3*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][corner / 2]) +
+                                    (u1*u4*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][corner / 2]) +
+                                    (u2*u3*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][corner / 2]) +
+                                    (u2*u4*ruleskanan[(serong+1)/2][(depan+1)/2][corner / 2]));
+                                   
+                      } else
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 1) || (depan == 3)) && ((corner == 1) || (corner == 3)))//0-0-0
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u4 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]); 
+                        u5 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u6 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*u5*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                   (u1*u4*u5*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][((corner+1)/2) - 1]) +
+                                   (u1*u3*u6*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][(corner+1)/2]) +
+                                   (u1*u4*u6*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][(corner+1)/2]) +
+								   (u2*u3*u5*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                   (u2*u4*u5*ruleskiri[(serong+1)/2][(depan+1)/2][((corner+1)/2) - 1]) +
+                                   (u2*u3*u6*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                   (u2*u4*u6*ruleskiri[(serong+1)/2][(depan+1)/2][(corner+1)/2]));
+                                   
+                           
+                        pwmkanan = ((u1*u3*u5*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                    (u1*u4*u5*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][((corner+1)/2) - 1]) +
+                                    (u1*u3*u6*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u1*u4*u6*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][(corner+1)/2]) +
+								    (u2*u3*u5*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                    (u2*u4*u5*ruleskanan[(serong+1)/2][(depan+1)/2][((corner+1)/2) - 1]) +
+                                    (u2*u3*u6*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u2*u4*u6*ruleskanan[(serong+1)/2][(depan+1)/2][(corner+1)/2]));
+					  }
+}
+
+
+
+
+int main() {
+	while(1)
+	{
+		//int start = clock();
+		int i = 0;
+		file.open ("\\\\Robiyanto\\share-robiyanto\\datalidar.txt");
+		if (file.is_open() && cekode()) {
+			cout << "  3  " <<endl;
+			while (!file.eof()) 
+			{
+				file >> output1;
+				file >> output2;
+				file >> output3;
+				degree[i]=::atof(output1.c_str());
+				range[i]=::atof(output2.c_str());
+				quality[i]=::atof(output3.c_str());
+				i++;
+
+				jumlahdata= i-1;
+			
+			}
+			
+		file.close();
+
+		cout <<"Jumlah Data"<< i << endl;
+		
+				sum1=sum2=sum3=sum4=c1=c2=c3=c4=0;
+			for (int p=0; p<i; p++)
+			{
+			
+				if ((degree[p]>=0) && (degree[p]<=5)) 
+				{
+				sum1 = sum1+range[p];
+				sum1f = sum1f + degree[p];
+				c1++;
+				}
+				else if
+				((degree[p]>= 20) && (degree[p]<=25 ))
+				{
+				sum2 = sum2+range[p];
+				sum2f = sum2f + degree[p];
+				c2++;
+				}
+				else if
+				((degree[p]>= 55) && (degree[p] <= 85))
+				{
+				sum3 = sum3+range[p];
+				c3++;
+				}
+				else if
+				((degree[p]>= 90) && (degree[p] <= 120))
+				{
+				sum4 = sum4+range[p];
+				c4++;
+				}
+			
+				
+
+			}
+		
+
+		kanan1 = (sum1/10)/c1; sum1f = sum1f/c1;
+		serong_kananA1 = (sum2/10)/c2; sum2f = sum2f/c2;
+		serong_kananB1 = (sum3/10)/c3;
+		depan1 = (sum4/10)/c4;
+		degf = sum2f-sum1f;
+		double theta,result;
+		double derajat;
+		int posisi;
+		
+		cout<<" aaaaaaaaaaaaaaaa: "<<degf<<endl;
+		
+
+		result= sqrt ((serong_kananA1*serong_kananA1) + (kanan1*kanan1) - (2*cos_(degf)*serong_kananA1*kanan1));   
+
+		cout <<"  result:"<< result<< endl;
+		theta = (((result*result) + (kanan1*kanan1) - (serong_kananA1*serong_kananA1)) / (2*result*kanan1));
+		cout <<"  theta: "<<theta<< endl;
+		derajat = acos_(theta);
+		cout <<"  derajat:"<< derajat << endl;
+
+		if (derajat >= 85.0 && derajat < 95.0) {posisi = 1;}
+		else if (derajat >= 95.0) {posisi = 2;}
+		else {posisi = 3;}
+	
+		cout << posisi <<endl;
+
+	
+		cout <<" kanan1    "<< kanan1 << " serong_kananA1 " << serong_kananA1 << " serong_kananB1 " << serong_kananB1 << "  depan1 " << depan1 << endl;
+	
+		cek_posisi(serong_kananB1, depan1, derajat);
+			
+
+
+			if (pwmkanan >= -255 && pwmkanan <=255 && pwmkiri >= -255 && pwmkiri <= 255)
+			{
+				
+	   printf("pwmkanan : %d\t pwmkiri : %d\t \n",pwmkanan,pwmkiri);
+		    
+		
+			
+			
+			char pwmkanankiri[10];
+			char pwmkananchar[4];
+			char pwmkirichar[4];
+			
+			itoa(pwmkanan,pwmkananchar,10);
+			itoa(pwmkiri,pwmkirichar,10);
+			int SizeKanan = strlen(pwmkananchar);
+			int SizeKiri = strlen(pwmkirichar);
+			int SizeTotal = SizeKanan + SizeKiri + 1;	
+			for(int i=0;i<SizeKanan;i++)
+			{
+				pwmkanankiri[i] = pwmkananchar[i];
+			}
+			pwmkanankiri[SizeKanan] = ';';
+			for(int i=SizeKanan+1;i<SizeTotal;i++)
+			{
+				pwmkanankiri[i] = pwmkirichar[i-(SizeKiri+1)];
+			}
+			comm.startDevice("COM4", 9600);
+			cout<<"----------------"<<endl;
+			for (int i=0;i<SizeTotal;i++)
+			{
+				
+				comm.send_data((int)pwmkanankiri[i]);
+				cout<<((int)pwmkanankiri[i])<<"++++";
+			} cout<<"----------------"<<endl;
+			comm.stopDevice();
+			}
+					
+	}
+//	int stop = clock();
+	//if ((stop-start)/double(CLOCKS_PER_SEC)>0)
+	//cout<<"siklus"<<(stop-start)/double(CLOCKS_PER_SEC)<<endl;
+} 
+return 0;	
+}
+#include <stdio.h>
+#include <iostream>
+#include <conio.h>
+#include "tserial.h"
+#include "bot_control.h"
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <math.h>
+#include <cmath>
+#include <Windows.h>
+#include <ctime>
+
+using namespace std;
+int a = 100, b = 150, c=200;
+int r = 48, s = 88, t = 128;
+
+long int pwmkiri,pwmkanan; 
+float u1,u2,u3,u4,u5,u6,u7,u8;
+int k;
+
+
+float batas[3]={100, 150, 200};
+float sudut[3]={20, 88, 160};
+		double sum1f=0,sum2f=0,degf;
+
+int ruleskiri[3][3][3]={
+                    {
+                     {20,20,20},
+                     {20,40,40},
+                     {20,40,50}
+                    },
+                    {
+                     {65,35,50},
+                     {65,35,50},
+                     {65,40,60}
+                    }, 
+                    {
+                     {20,25,35},
+                     {20,45,65},
+                     {20,65,65}
+                    }
+                  };
+              
+int ruleskanan[3][3][3]={
+                    {
+                     {65,60,55},
+                     {65,65,55},
+                     {65,60,50}
+                    },
+                    {
+                     {20,35,60},
+                     {20,35,50},
+                     {20,40,40}
+                    },
+                    {
+                     {65,50,35},
+                     {65,25,40},
+                     {65,20,20}
+                    }
+                  };
+char conversionBuffer[5];
+serial comm;
+
+using namespace std;
+
+ifstream file;
+double degree[400], range[400], quality[400];
+string output1, output2, output3,code,lastcode;
+int jumlahdata;
+float kanan1, serong_kananA1, serong_kananB1, depan1;
+float sum1 =0, sum2 =0, sum3 =0, sum4 =0;
+int c1 =0,c2=0,c3=0,c4=0;
+int serong, depan, corner;
+
+double sin_(double par)
+	{double temp = sin ((par * 3.14)/180); return temp;}
+
+double cos_(double par)
+	{double temp = cos ((par * 3.14)/180); return temp;}
+
+double asin_(double par)
+	{double temp;
+		temp = asin(par);
+		temp = ((temp*180)/3.14); return temp;}
+
+double acos_(double par)
+	{double temp;
+		temp = acos(par);
+		temp = ((temp*180)/3.14); return temp;}
+			
+
+bool cekode()
+{
+	file.clear();
+	file.seekg(0,ios::beg);
+	file>>code;
+
+	if (code==lastcode)
+	{
+		return false;
+	}
+	else
+	{
+		lastcode = code;
+		return true;
+	}
+}
+
+
+void cek_posisi(float gx,float gy,float gz)
+ {
+	 int x,y,z;
+	 cout <<"1     "<< gx << "    " << gy << "    " << gz <<endl;
+	    
+	 	x= static_cast<int>(gx);
+		y= static_cast<int>(gy);
+		z= static_cast<int>(gz);
+		cout <<"2      "<< x << "    " << y << "    " << z <<endl;
+ 
+	    if (x < a) {serong=0;} else
+          if (x < b) {serong=1;} else
+            if (x == b) {serong=2;} else
+              if (x < c) {serong=3;} else
+                {serong=4;} 
+              if (y < a) {depan=0;} else
+                if (y < b) {depan=1;} else
+                  if (y == b) {depan=2;} else
+                    if (y < c) {depan=3;} else
+                      {depan=4;}   
+                     if (z < r) {corner=0;} else
+                       if (z < s) {corner=1;} else
+                        if (z == s) {corner=2;} else
+                          if (z < t) {corner=3;} else
+                            {corner=4;}
+                      cout <<"4     "<< serong << "    " << depan << "    " << corner << endl;
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 0) || (corner == 2) || (corner == 4)))//1-1-1
+
+                      {pwmkiri = ruleskiri[serong / 2][depan / 2][corner / 2]; 
+
+                       pwmkanan = ruleskanan[serong / 2][depan / 2][corner / 2];
+					  } else
+                      
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 1) || (corner == 3)))//1-1-0
+                      {
+                        u1 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u2 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]); 
+                        
+                        pwmkiri = u1*ruleskiri[serong / 2][depan / 2][((corner+1)/2) - 1] + u2*ruleskiri[serong / 2][depan / 2][(corner+1)/2];
+                        
+                        pwmkanan = u1*ruleskanan[serong / 2][depan / 2][((corner+1)/2) - 1] + u2*ruleskanan[serong / 2][depan / 2][(corner+1)/2]; 
+                      } else
+
+                      if  (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 1) || (depan == 3)) && ((corner == 0) || (corner == 2) || (corner == 4)))//1-0-1
+                      {                   
+                        u1 = (gy - batas[((depan+1)/2)-1]) / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u2 = (batas[(depan+1)/2] - gy)     / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        
+                        pwmkiri = u1*ruleskiri[serong / 2][((depan+1)/2) - 1][corner / 2] + u2*ruleskiri[serong / 2][(depan+1)/2][corner / 2];
+                        
+                        pwmkanan = u1*ruleskanan[serong / 2][((depan+1)/2) - 1][corner / 2] + u2*ruleskanan[serong / 2][(depan+1)/2][corner / 2];
+                      } else
+
+					  if (((serong == 1) || (serong == 3)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 0) || (corner == 2) || (corner == 4)))//0-1-1
+                      {
+                       u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                       u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]); 
+                        
+                        pwmkiri = u1*ruleskiri[((serong+1)/2) - 1][depan / 2][corner / 2] + u2*ruleskiri[(serong+1)/2][depan / 2][corner / 2];
+                        
+                        pwmkanan = u1*ruleskanan[((serong+1)/2) - 1][depan / 2][corner / 2] + u2*ruleskanan[(serong+1)/2][depan / 2][corner / 2];   
+                      } else
+
+                      if (((serong == 0) || (serong == 2) || (serong == 4)) && ((depan == 1) || (depan == 3)) && ((corner == 1) || (corner == 3)))//1-0-0
+                      {
+                        u1 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u2 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u3 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u4 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[serong / 2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+								   (u1*u4*ruleskiri[serong / 2][((depan+1)/2) - 1][(corner+1)/2]) + 
+                                   (u2*u4*ruleskiri[serong / 2][(depan+1)/2][(corner+1)/2]) + 
+                                   (u2*u3*ruleskiri[serong / 2][(depan+1)/2][((corner+1)/2) - 1]));
+                                   
+                        pwmkanan = ((u1*u3*ruleskanan[serong / 2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+							        (u1*u4*ruleskanan[serong / 2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u2*u4*ruleskanan[serong / 2][(depan+1)/2][(corner+1)/2]) +   
+                                    (u2*u3*ruleskanan[serong / 2][(depan+1)/2][((corner+1)/2) - 1]));
+                      } else 
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 0) || (depan == 2) || (depan == 4)) && ((corner == 1) || (corner == 3)))//0-1-0
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u4 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[((serong+1)/2) - 1][depan / 2][((corner+1)/2) - 1]) + 
+                                   (u1*u4*ruleskiri[((serong+1)/2) - 1][depan / 2][(corner+1)/2]) +
+                                   (u2*u3*ruleskiri[(serong+1)/2][depan / 2][((corner+1)/2) - 1]) +
+                                   (u2*u4*ruleskiri[(serong+1)/2][depan / 2][(corner+1)/2]));
+                                 
+                        pwmkanan = ((u1*u3*ruleskanan[((serong+1)/2) - 1][depan / 2][((corner+1)/2) - 1]) + 
+                                    (u1*u4*ruleskanan[((serong+1)/2) - 1][depan / 2][(corner+1)/2]) +
+                                    (u2*u3*ruleskanan[(serong+1)/2][depan / 2][((corner+1)/2) - 1]) +
+                                    (u2*u4*ruleskanan[(serong+1)/2][depan / 2][(corner+1)/2]));
+                      } else
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 1) || (depan == 3)) && ((corner == 0) || (corner == 2) || (corner == 4)))//0-0-1
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u4 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]); 
+                        
+                        pwmkiri = ((u1*u3*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][corner / 2]) +
+                                   (u1*u4*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][corner / 2]) +
+                                   (u2*u3*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][corner / 2]) +
+                                   (u2*u4*ruleskiri[(serong+1)/2][(depan+1)/2][corner / 2]));
+                                   
+                        pwmkanan = ((u1*u3*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][corner / 2]) +
+                                    (u1*u4*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][corner / 2]) +
+                                    (u2*u3*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][corner / 2]) +
+                                    (u2*u4*ruleskanan[(serong+1)/2][(depan+1)/2][corner / 2]));
+                                   
+                      } else
+
+                      if (((serong == 1) || (serong == 3)) && ((depan == 1) || (depan == 3)) && ((corner == 1) || (corner == 3)))//0-0-0
+                      {
+                        u1 = (gx - batas[((serong+1)/2) - 1]) / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u2 = (batas[(serong+1)/2] - gx)       / (batas[(serong+1)/2] - batas[((serong+1)/2) - 1]);
+                        u3 = (gy - batas[((depan+1)/2) - 1])  / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]);
+                        u4 = (batas[(depan+1)/2] - gy)        / (batas[(depan+1)/2] - batas[((depan+1)/2) - 1]); 
+                        u5 = (gz - sudut[((corner+1)/2) - 1]) / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        u6 = (sudut[(corner+1)/2] - gz)       / (sudut[(corner+1)/2] - sudut[((corner+1)/2) - 1]);
+                        
+                        pwmkiri = ((u1*u3*u5*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                   (u1*u4*u5*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][((corner+1)/2) - 1]) +
+                                   (u1*u3*u6*ruleskiri[((serong+1)/2) - 1][((depan+1)/2) - 1][(corner+1)/2]) +
+                                   (u1*u4*u6*ruleskiri[((serong+1)/2) - 1][(depan+1)/2][(corner+1)/2]) +
+								   (u2*u3*u5*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                   (u2*u4*u5*ruleskiri[(serong+1)/2][(depan+1)/2][((corner+1)/2) - 1]) +
+                                   (u2*u3*u6*ruleskiri[(serong+1)/2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                   (u2*u4*u6*ruleskiri[(serong+1)/2][(depan+1)/2][(corner+1)/2]));
+                                   
+                           
+                        pwmkanan = ((u1*u3*u5*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                    (u1*u4*u5*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][((corner+1)/2) - 1]) +
+                                    (u1*u3*u6*ruleskanan[((serong+1)/2) - 1][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u1*u4*u6*ruleskanan[((serong+1)/2) - 1][(depan+1)/2][(corner+1)/2]) +
+								    (u2*u3*u5*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][((corner+1)/2) - 1]) +
+                                    (u2*u4*u5*ruleskanan[(serong+1)/2][(depan+1)/2][((corner+1)/2) - 1]) +
+                                    (u2*u3*u6*ruleskanan[(serong+1)/2][((depan+1)/2) - 1][(corner+1)/2]) +
+                                    (u2*u4*u6*ruleskanan[(serong+1)/2][(depan+1)/2][(corner+1)/2]));
+					  }
+}
+
+
+
+
+int main() {
+	while(1)
+	{
+		//int start = clock();
+		int i = 0;
+		file.open ("\\\\Robiyanto\\share-robiyanto\\datalidar.txt");
+		if (file.is_open() && cekode()) {
+			cout << "  3  " <<endl;
+			while (!file.eof()) 
+			{
+				file >> output1;
+				file >> output2;
+				file >> output3;
+				degree[i]=::atof(output1.c_str());
+				range[i]=::atof(output2.c_str());
+				quality[i]=::atof(output3.c_str());
+				i++;
+
+				jumlahdata= i-1;
+			
+			}
+			
+		file.close();
+
+		cout <<"Jumlah Data"<< i << endl;
+		
+				sum1=sum2=sum3=sum4=c1=c2=c3=c4=0;
+			for (int p=0; p<i; p++)
+			{
+			
+				if ((degree[p]>=0) && (degree[p]<=5)) 
+				{
+				sum1 = sum1+range[p];
+				sum1f = sum1f + degree[p];
+				c1++;
+				}
+				else if
+				((degree[p]>= 20) && (degree[p]<=25 ))
+				{
+				sum2 = sum2+range[p];
+				sum2f = sum2f + degree[p];
+				c2++;
+				}
+				else if
+				((degree[p]>= 55) && (degree[p] <= 85))
+				{
+				sum3 = sum3+range[p];
+				c3++;
+				}
+				else if
+				((degree[p]>= 90) && (degree[p] <= 120))
+				{
+				sum4 = sum4+range[p];
+				c4++;
+				}
+			
+				
+
+			}
+		
+
+		kanan1 = (sum1/10)/c1; sum1f = sum1f/c1;
+		serong_kananA1 = (sum2/10)/c2; sum2f = sum2f/c2;
+		serong_kananB1 = (sum3/10)/c3;
+		depan1 = (sum4/10)/c4;
+		degf = sum2f-sum1f;
+		double theta,result;
+		double derajat;
+		int posisi;
+		
+		cout<<" aaaaaaaaaaaaaaaa: "<<degf<<endl;
+		
+
+		result= sqrt ((serong_kananA1*serong_kananA1) + (kanan1*kanan1) - (2*cos_(degf)*serong_kananA1*kanan1));   
+
+		cout <<"  result:"<< result<< endl;
+		theta = (((result*result) + (kanan1*kanan1) - (serong_kananA1*serong_kananA1)) / (2*result*kanan1));
+		cout <<"  theta: "<<theta<< endl;
+		derajat = acos_(theta);
+		cout <<"  derajat:"<< derajat << endl;
+
+		if (derajat >= 85.0 && derajat < 95.0) {posisi = 1;}
+		else if (derajat >= 95.0) {posisi = 2;}
+		else {posisi = 3;}
+	
+		cout << posisi <<endl;
+
+	
+		cout <<" kanan1    "<< kanan1 << " serong_kananA1 " << serong_kananA1 << " serong_kananB1 " << serong_kananB1 << "  depan1 " << depan1 << endl;
+	
+		cek_posisi(serong_kananB1, depan1, derajat);
+			
+
+
+			if (pwmkanan >= -255 && pwmkanan <=255 && pwmkiri >= -255 && pwmkiri <= 255)
+			{
+				
+	   printf("pwmkanan : %d\t pwmkiri : %d\t \n",pwmkanan,pwmkiri);
+		    
+		
+			
+			
+			char pwmkanankiri[10];
+			char pwmkananchar[4];
+			char pwmkirichar[4];
+			
+			itoa(pwmkanan,pwmkananchar,10);
+			itoa(pwmkiri,pwmkirichar,10);
+			int SizeKanan = strlen(pwmkananchar);
+			int SizeKiri = strlen(pwmkirichar);
+			int SizeTotal = SizeKanan + SizeKiri + 1;	
+			for(int i=0;i<SizeKanan;i++)
+			{
+				pwmkanankiri[i] = pwmkananchar[i];
+			}
+			pwmkanankiri[SizeKanan] = ';';
+			for(int i=SizeKanan+1;i<SizeTotal;i++)
+			{
+				pwmkanankiri[i] = pwmkirichar[i-(SizeKiri+1)];
+			}
+			comm.startDevice("COM4", 9600);
+			cout<<"----------------"<<endl;
+			for (int i=0;i<SizeTotal;i++)
+			{
+				
+				comm.send_data((int)pwmkanankiri[i]);
+				cout<<((int)pwmkanankiri[i])<<"++++";
+			} cout<<"----------------"<<endl;
+			comm.stopDevice();
+			}
+					
+	}
+//	int stop = clock();
+	//if ((stop-start)/double(CLOCKS_PER_SEC)>0)
+	//cout<<"siklus"<<(stop-start)/double(CLOCKS_PER_SEC)<<endl;
+} 
+return 0;	
+}
